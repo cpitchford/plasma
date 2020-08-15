@@ -81,6 +81,8 @@ def main():
         pattern, pattern_w, pattern_h, pattern_meta = load_pattern("default")
         alpha = pattern_meta['alpha']
         channels = 4 if alpha else 3
+        screensaver_backup = None
+
 
         while not stopped.wait(1.0 / opts.fps):
             delta = time.time() * 60
@@ -98,6 +100,7 @@ def main():
                     try:
                         r, g, b = [min(255, int(c)) for c in rgb]
                         pattern, pattern_w, pattern_h, pattern_meta = None, 0, 0, None
+                        screensaver_backup = None
                     except ValueError:
                         log("Invalid colour: {}".format(command))
                 elif len(rgb) == 2 and rgb[0] == "fps":
@@ -106,10 +109,21 @@ def main():
                         log("Framerate set to: {}fps".format(rgb[1]))
                     except ValueError:
                         log("Invalid framerate: {}".format(rgb[1]))
+                elif len(rgb) == 2 and rgb[0] == "screensaver":
+                    if rgb[1] == 'on' and screensaver_backup is None:
+                        screensaver_backup = (pattern, pattern_w, pattern_h, pattern_meta, r,g,b,channels)
+                        pattern, pattern_w, pattern_h, pattern_meta = None, 0, 0, None
+                        r, g, b = (0,0,0)
+                    elif rgb[1] == 'off' and screensaver_backup is not None:
+                        pattern, pattern_w, pattern_h, pattern_meta, r,g,b,channels = screensaver_backup
+                        screensaver_backup = None
+                    else:
+                        continue
                 else:
                     pattern, pattern_w, pattern_h, pattern_meta = load_pattern(command)
                     alpha = pattern_meta['alpha']
                     channels = 4 if alpha else 3
+                    screensaver_backup = None
 
             if pattern is not None:
                 offset_y = int(delta % pattern_h)
